@@ -22,6 +22,14 @@ class Bucket():
         self.loading_done = True
         self.loading_steps = ['|', '/', '-', '\\']
 
+        self.bucket_acl_map = {
+            "READ": "%s can List Objects in the Bucket",
+            "WRITE": "%s can Create, Modify and Delete Objects in the Bucket",
+            "READ_ACP": "%s can Read Bucket ACL",
+            "WRITE_ACP": "%s can Modify the Bucket ACL",
+            "FULL_CONTROL": "%s has Full Control on the Bucket"
+        }
+
     def validate_bucket(self) -> bool:
         self.load_message('Validating Bucket...')
         if not self.bucket_name:
@@ -86,11 +94,33 @@ class Bucket():
         except ClientError as e:
             self.done_message(message="Unknown Error " + str(e), status=False)
 
+    def check_bucket_acl(self) -> None:
+        self.load_message("Checking Bucket ACL...")
+        status = True
+        try:
+            bucket_acl = self.s3.get_bucket_acl(Bucket=self.bucket_name)
+            if 'Grants' in bucket_acl:
+                for grant in bucket_acl['Grants']:
+                    grantee = grant['Grantee']
+                    permission = grant['Permission']
+                    if grantee['Type'] == 'Group':
+                        group = grantee['URI'].split('/')[-1]
+                        if group == "AuthenticatedUsers" or "AllUsers":
+                            status = False
+                            self.done_message(message=self.bucket_acl_map[permission] % group, status=status)
+                if status:
+                    self.done_message(message="Bucket ACLs configured properly.", status=True)
+            else:
+                self.done_message(message="Bucket ACL not configured.", status=False)
+        except ClientError as e:
+            self.done_message(message="Unknown Error " + str(e), status=False)
+
     def check_all(self) -> None:
         self.check_static_website()
         self.check_server_encyption()
         self.check_logging()
         self.check_versioning_mfa()
+        self.check_bucket_acl()
 
     def load_message(self, message) -> None:
         loading_thread = threading.Thread(target=self.loading, args=(message, ), daemon=True)
