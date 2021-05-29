@@ -5,6 +5,11 @@ import threading
 from itertools import cycle
 from shutil import get_terminal_size
 import time
+from colorama import Fore, Style, init
+
+
+init(convert=True)
+
 
 class Bucket():
     def __init__(self, bucket_name: str = "") -> None:
@@ -31,18 +36,19 @@ class Bucket():
         self.loading_done = False
         loading_thread.start()
 
-    def done_message(self, message) -> None:
+    def done_message(self, message: str = "", status: bool = True) -> None:
         self.loading_done = True
         time.sleep(0.1)
+        color = Fore.LIGHTRED_EX + '[-] ' if not status else Fore.LIGHTGREEN_EX + '[+] '
         cols = get_terminal_size((80, 24)).columns
         print("\r" + " " * cols, end="", flush=True)
-        print(f"\r{message}", flush=True)
+        print(f"\r{Style.BRIGHT}{color}{message}{Style.RESET_ALL}", flush=True)
 
     def loading(self, message) -> None:
         for step in cycle(self.loading_steps):
             if self.loading_done:
                 break
-            print(f'\r[{step}] {message}', end="", flush=True)
+            print(f'\r{Style.BRIGHT}{Fore.LIGHTBLUE_EX}[{step}] {message}{Style.RESET_ALL}', end="", flush=True)
             time.sleep(0.1)
 
 
@@ -57,11 +63,11 @@ if __name__ == '__main__':
         print_usage()
 
     bucket_name = sys.argv[1].strip()
-    print("Selected Bucket:", bucket_name)
+    print(f"{Style.BRIGHT}{Fore.LIGHTCYAN_EX}[i] Selected Bucket:", bucket_name, Style.RESET_ALL)
 
     bucket = Bucket(bucket_name=bucket_name)
     if not bucket.validate_bucket():
-        bucket.done_message("Invalid Bucket Requested!")
+        bucket.done_message(message="Invalid Bucket Requested!", status=False)
         exit(1)
 
-    bucket.done_message("Bucket Found!")
+    bucket.done_message(message="Bucket Found!", status=True)
