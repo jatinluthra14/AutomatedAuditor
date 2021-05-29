@@ -43,8 +43,20 @@ class Bucket():
             else:
                 self.done_message(message="Unknown Error " + str(e), status=False)
 
+    def check_server_encyption(self) -> None:
+        self.load_message("Checking Server Side Encryption...")
+        try:
+            print(self.s3.get_bucket_encryption(Bucket=self.bucket_name))
+            self.done_message(message="Server Side Encryption configured.", status=True)
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ServerSideEncryptionConfigurationNotFoundError':
+                self.done_message(message="Server Side Encryption not configured.", status=False)
+            else:
+                self.done_message(message="Unknown Error " + str(e), status=False)
+
     def check_all(self) -> None:
         self.check_static_website()
+        self.check_server_encyption()
 
     def load_message(self, message) -> None:
         loading_thread = threading.Thread(target=self.loading, args=(message, ), daemon=True)
