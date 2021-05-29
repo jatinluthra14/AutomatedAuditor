@@ -54,9 +54,21 @@ class Bucket():
             else:
                 self.done_message(message="Unknown Error " + str(e), status=False)
 
+    def check_logging(self) -> None:
+        self.load_message("Checking Audit Logging...")
+        try:
+            logging = self.s3.get_bucket_logging(Bucket=self.bucket_name)
+            if 'LoggingEnabled' in logging:
+                self.done_message(message="Audit Logging configured.", status=True)
+            else:
+                self.done_message(message="Audit Logging not configured.", status=False)
+        except ClientError as e:
+            self.done_message(message="Unknown Error " + str(e), status=False)
+
     def check_all(self) -> None:
         self.check_static_website()
         self.check_server_encyption()
+        self.check_logging()
 
     def load_message(self, message) -> None:
         loading_thread = threading.Thread(target=self.loading, args=(message, ), daemon=True)
