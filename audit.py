@@ -1,6 +1,7 @@
 import sys
 import boto3
 import boto3.session
+from botocore.exceptions import ClientError
 import threading
 from itertools import cycle
 from shutil import get_terminal_size
@@ -30,6 +31,20 @@ class Bucket():
         for bucket in self.s3.list_buckets()['Buckets']:
             buckets.append(bucket['Name'])
         return self.bucket_name in buckets
+
+    def check_static_website(self) -> None:
+        self.load_message("Checking Static Website Hosting...")
+        try:
+            print(self.s3.get_bucket_website(Bucket=self.bucket_name))
+            self.done_message(message="Static Website Hosting configured.", status=False)
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchWebsiteConfiguration':
+                self.done_message(message="Static Website Hosting not configured.", status=True)
+            else:
+                self.done_message(message="Unknown Error " + str(e), status=False)
+
+    def check_all(self) -> None:
+        self.check_static_website()
 
     def load_message(self, message) -> None:
         loading_thread = threading.Thread(target=self.loading, args=(message, ), daemon=True)
@@ -71,3 +86,5 @@ if __name__ == '__main__':
         exit(1)
 
     bucket.done_message(message="Bucket Found!", status=True)
+
+    bucket.check_all()
