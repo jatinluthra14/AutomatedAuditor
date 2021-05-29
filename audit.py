@@ -65,10 +65,32 @@ class Bucket():
         except ClientError as e:
             self.done_message(message="Unknown Error " + str(e), status=False)
 
+    def check_versioning_mfa(self) -> None:
+        self.load_message("Checking Object Versioning and MFA...")
+        try:
+            versioning = self.s3.get_bucket_versioning(Bucket=self.bucket_name)
+            if 'Status' in versioning:
+                if versioning['Status'] == 'Enabled':
+                    self.done_message(message="Object Versioning Enabled.", status=True)
+                else:
+                    self.done_message(message=f"Object Versioning {versioning['Status']}.", status=False)
+            else:
+                self.done_message(message="Object Versioning not configured.", status=False)
+            if 'MFADelete' in versioning:
+                if versioning['MFADelete'] == 'Enabled':
+                    self.done_message(message="MFA Delete Enabled.", status=True)
+                else:
+                    self.done_message(message=f"MFA Delete {versioning['MFADelete']}.", status=False)
+            else:
+                self.done_message(message="MFA Delete not configured.", status=False)
+        except ClientError as e:
+            self.done_message(message="Unknown Error " + str(e), status=False)
+
     def check_all(self) -> None:
         self.check_static_website()
         self.check_server_encyption()
         self.check_logging()
+        self.check_versioning_mfa()
 
     def load_message(self, message) -> None:
         loading_thread = threading.Thread(target=self.loading, args=(message, ), daemon=True)
