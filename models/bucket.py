@@ -41,7 +41,7 @@ class Bucket():
     def check_static_website(self) -> None:
         self.load_message("Checking Static Website Hosting...")
         try:
-            print(self.s3.get_bucket_website(Bucket=self.bucket_name))
+            self.s3.get_bucket_website(Bucket=self.bucket_name)
             self.done_message(message="Static Website Hosting configured.", status=False)
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchWebsiteConfiguration':
@@ -52,7 +52,7 @@ class Bucket():
     def check_server_encyption(self) -> None:
         self.load_message("Checking Server Side Encryption...")
         try:
-            print(self.s3.get_bucket_encryption(Bucket=self.bucket_name))
+            self.s3.get_bucket_encryption(Bucket=self.bucket_name)
             self.done_message(message="Server Side Encryption configured.", status=True)
         except ClientError as e:
             if e.response['Error']['Code'] == 'ServerSideEncryptionConfigurationNotFoundError':
@@ -103,7 +103,7 @@ class Bucket():
                     permission = grant['Permission']
                     if grantee['Type'] == 'Group':
                         group = grantee['URI'].split('/')[-1]
-                        if group == "AuthenticatedUsers" or "AllUsers":
+                        if group == "AuthenticatedUsers" or group == "AllUsers":
                             status = False
                             self.done_message(message=self.bucket_acl_map[permission] % group, status=status)
                 if status:
