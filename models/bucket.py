@@ -139,3 +139,21 @@ class Bucket():
                 break
             print(f'\r{Style.BRIGHT}{Fore.LIGHTBLUE_EX}[{step}] {message}{Style.RESET_ALL}', end="", flush=True)
             time.sleep(0.1)
+
+    def check_bucket(self) -> None:
+        if self.bucket_name:
+            print(f"{Style.BRIGHT}{Fore.LIGHTCYAN_EX}[i] Selected Bucket:", self.bucket_name, Style.RESET_ALL)
+            if not self.validate_bucket():
+                self.done_message(message="Invalid Bucket Requested!", status=False)
+                return
+            self.done_message(message="Bucket Found!", status=True)
+            self.check_all()
+
+    def start(self) -> None:
+        if self.bucket_name:
+            self.check_bucket()
+        else:
+            print(f"{Style.BRIGHT}{Fore.LIGHTCYAN_EX}[i] No Specific Bucket Name Provided, Auditing All", Style.RESET_ALL)
+            for bucket in self.s3.list_buckets()['Buckets']:
+                self.bucket_name = bucket['Name']
+                self.check_bucket()
