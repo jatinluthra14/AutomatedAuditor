@@ -11,8 +11,12 @@ init(convert=True)
 
 
 class Bucket():
-    def __init__(self, bucket_name: str = "") -> None:
-        self.session = boto3.session.Session()
+    def __init__(self, bucket_name: str = "", aws_access_key_id: str = "", aws_secret_access_key: str = "") -> None:
+        if aws_access_key_id and aws_secret_access_key:
+            self.session = boto3.session.Session(aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+        else:
+            self.session = boto3.session.Session()
+
         self.s3 = self.session.client('s3')
 
         self.bucket_name = bucket_name
@@ -27,6 +31,18 @@ class Bucket():
             "WRITE_ACP": "%s can Modify the Bucket ACL",
             "FULL_CONTROL": "%s has Full Control on the Bucket"
         }
+
+    def validate_creds(self) -> bool:
+        sts = self.session.client('sts')
+        try:
+            ident = sts.get_caller_identity()
+            if not ident:
+                return False
+            else:
+                return True
+        except ClientError as e:
+            print(f"{Style.BRIGHT}{Fore.LIGHTRED_EX} [-]", e.response['Error']['Code'], Style.RESET_ALL)
+            return False
 
     def validate_bucket(self) -> bool:
         self.load_message('Validating Bucket...')
@@ -150,6 +166,10 @@ class Bucket():
             self.check_all()
 
     def start(self) -> None:
+        if not self.validate_creds():
+            print(f"{Style.BRIGHT}{Fore.LIGHTRED_EX} [-] Error in Credentials", Style.RESET_ALL)
+            return
+
         if self.bucket_name:
             self.check_bucket()
         else:
