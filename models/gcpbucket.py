@@ -28,6 +28,12 @@ class GCPBucket():
             buckets.append(bucket.name)
         return self.bucket_name in buckets
 
+    def check_iam(self) -> None:
+        print(self.client.get_bucket(self.bucket_name).get_iam_policy().bindings)
+
+    def check_all(self) -> None:
+        self.check_iam()
+
     def check_bucket(self) -> None:
         if self.bucket_name:
             print(f"{Style.BRIGHT}{Fore.LIGHTCYAN_EX}[i] Selected Bucket:", self.bucket_name, Style.RESET_ALL)
@@ -35,9 +41,9 @@ class GCPBucket():
                 self.loader.done_message(message="Invalid Bucket Requested!", status=False)
                 return
             self.loader.done_message(message="Bucket Found!", status=True)
+            self.check_all()
 
     def start(self) -> None:
-
         if self.bucket_name:
             self.check_bucket()
         else:
