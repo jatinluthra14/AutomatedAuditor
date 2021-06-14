@@ -10,7 +10,7 @@ from colorama import Fore, Style, init
 init(convert=True)
 
 
-class Bucket():
+class S3Bucket():
     def __init__(self, bucket_name: str = "", aws_access_key_id: str = "", aws_secret_access_key: str = "") -> None:
         if aws_access_key_id and aws_secret_access_key:
             self.session = boto3.session.Session(aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)

@@ -1,5 +1,5 @@
 import sys
-from models.bucket import Bucket
+from models.s3bucket import S3Bucket
 from getpass import getpass
 
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     creds = input_creds()
     if creds[0] and creds[1]:
-        bucket = Bucket(bucket_name=bucket_name, aws_access_key_id=creds[0], aws_secret_access_key=creds[1])
+        bucket = S3Bucket(bucket_name=bucket_name, aws_access_key_id=creds[0], aws_secret_access_key=creds[1])
     else:
-        bucket = Bucket(bucket_name=bucket_name)
+        bucket = S3Bucket(bucket_name=bucket_name)
     bucket.start()
