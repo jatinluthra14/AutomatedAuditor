@@ -5,23 +5,27 @@ from getpass import getpass
 platforms = ['aws', 'gcp']
 
 
-def print_usage():
+def print_usage() -> None:
     print(f"Usage: python {__file__} <platform(aws|gcp)> <bucket_name>")
     print(f"Example: python {__file__} aws test_bucket")
     exit(1)
 
 
-def input_creds() -> tuple[str, str]:
+def init_s3bucket() -> None:
     inp = input("Would you like to manually provide AWS credentials (No if it is saved in config file) Y/[N]: ").strip().upper()
     if not inp:
         inp = "N"
-
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
     if inp == "Y":
         aws_access_key_id = input("Enter AWS Access Key ID: ").strip()
         aws_secret_access_key = getpass(prompt="Enter AWS Secret Access Key (Input will be hidden): ").strip()
-        return (aws_access_key_id, aws_secret_access_key)
+
+    if aws_access_key_id and aws_secret_access_key:
+        bucket = S3Bucket(bucket_name=bucket_name, aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
     else:
-        return ("", "")
+        bucket = S3Bucket(bucket_name=bucket_name)
+    bucket.start()
 
 
 if __name__ == '__main__':
@@ -38,9 +42,5 @@ if __name__ == '__main__':
         print("Error: Invalid Platform!")
         print_usage()
 
-    creds = input_creds()
-    if creds[0] and creds[1]:
-        bucket = S3Bucket(bucket_name=bucket_name, aws_access_key_id=creds[0], aws_secret_access_key=creds[1])
-    else:
-        bucket = S3Bucket(bucket_name=bucket_name)
-    bucket.start()
+    if platform == 'aws':
+        init_s3bucket()
