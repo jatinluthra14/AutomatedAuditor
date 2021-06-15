@@ -1,6 +1,7 @@
 from utils.loader import Loader
 from utils.cprint import cprint
 from google.cloud import storage
+import requests
 
 
 class GCPBucket():
@@ -44,29 +45,55 @@ class GCPBucket():
             buckets.append(bucket.name)
         return self.bucket_name in buckets
 
-    def check_bucket_iam(self) -> None:
+    def check_bucket_iam_auth(self) -> None:
         bucket_perms = [perm for perm in self.bucket_permissions.keys() if perm != 'storage.buckets.create' and perm != 'storage.buckets.list']
         self.loader.load_message('Checking for Authenticated Bucket Permissions...')
+
         bucket_perm_check = self.client.bucket(self.bucket_name).test_iam_permissions(permissions=bucket_perms)
         if bucket_perm_check:
             self.loader.done_message(message='Found Authenticated Bucket Permissions!', status=True)
             cprint('\t' + '\n\t'.join([self.bucket_permissions[key] for key in bucket_perm_check]), info=True, symbol=False)
         else:
-            self.loader.done_message(message='No Bucket Permissions Found!', status=False)
+            self.loader.done_message(message='No Authenticated Bucket Permissions Found!', status=False)
 
-    def check_object_iam(self) -> None:
+    def check_object_iam_auth(self) -> None:
         object_perms = [perm for perm in self.object_permissions.keys() if perm != 'storage.objects.getIamPolicy' and perm != 'storage.objects.setIamPolicy']
         self.loader.load_message('Checking for Authenticated Object Permissions...')
+
         object_perm_check = self.client.bucket(self.bucket_name).test_iam_permissions(permissions=object_perms)
         if object_perm_check:
             self.loader.done_message(message='Found Authenticated Object Permissions!', status=True)
             cprint('\t' + '\n\t'.join([self.object_permissions[key] for key in object_perm_check]), info=True, symbol=False)
         else:
-            self.loader.done_message(message='No Object Permissions Found!', status=False)
+            self.loader.done_message(message='No Authenticated Object Permissions Found!', status=False)
+
+    def check_bucket_iam_unauth(self) -> None:
+        bucket_perms = [f'permissions={perm}' for perm in self.bucket_permissions.keys() if perm != 'storage.buckets.create' and perm != 'storage.buckets.list']
+        self.loader.load_message('Checking for Unauthenticated Bucket Permissions...')
+
+        bucket_perm_check = requests.get(f'https://www.googleapis.com/storage/v1/b/{self.bucket_name}/iam/testPermissions?{"&".join(bucket_perms)}').json()
+        if bucket_perm_check.get('permissions'):
+            self.loader.done_message(message='Found Unauthenticated Bucket Permissions!', status=True)
+            cprint('\t' + '\n\t'.join([self.bucket_permissions[key] for key in bucket_perm_check['permissions']]), info=True, symbol=False)
+        else:
+            self.loader.done_message(message='No Unauthenticated Bucket Permissions Found!', status=False)
+
+    def check_object_iam_unauth(self) -> None:
+        object_perms = [f'permissions={perm}' for perm in self.object_permissions.keys() if perm != 'storage.objects.getIamPolicy' and perm != 'storage.objects.setIamPolicy']
+        self.loader.load_message('Checking for Unauthenticated Object Permissions...')
+
+        object_perm_check = requests.get(f'https://www.googleapis.com/storage/v1/b/{self.bucket_name}/iam/testPermissions?{"&".join(object_perms)}').json()
+        if object_perm_check.get('permissions'):
+            self.loader.done_message(message='Found Unauthenticated Object Permissions!', status=True)
+            cprint('\t' + '\n\t'.join([self.object_permissions[key] for key in object_perm_check['permissions']]), info=True, symbol=False)
+        else:
+            self.loader.done_message(message='No Unauthenticated Object Permissions Found!', status=False)
 
     def check_all(self) -> None:
-        self.check_bucket_iam()
-        self.check_object_iam()
+        self.check_bucket_iam_auth()
+        self.check_object_iam_auth()
+        self.check_bucket_iam_unauth()
+        self.check_object_iam_unauth()
 
     def check_bucket(self) -> None:
         if self.bucket_name:
