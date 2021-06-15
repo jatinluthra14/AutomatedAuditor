@@ -1,10 +1,8 @@
+from utils.cprint import cprint
 import threading
 from itertools import cycle
 from shutil import get_terminal_size
 import time
-from colorama import Fore, Style, init
-
-init(convert=True)
 
 
 class Loader():
@@ -20,14 +18,15 @@ class Loader():
     def done_message(self, message: str = "", status: bool = True) -> None:
         self.loading_done = True
         time.sleep(0.1)
-        color = Fore.LIGHTRED_EX + '[-] ' if not status else Fore.LIGHTGREEN_EX + '[+] '
+        success = status
+        error = not status
         cols = get_terminal_size((80, 24)).columns
-        print("\r" + " " * cols, end="", flush=True)
-        print(f"\r{Style.BRIGHT}{color}{message}{Style.RESET_ALL}", flush=True)
+        cprint(" " * cols, end="", flush=True, carriage=True)
+        cprint(f"{message}", success=success, error=error, flush=True, carriage=True)
 
     def loading(self, message) -> None:
         for step in cycle(self.loading_steps):
             if self.loading_done:
                 break
-            print(f'\r{Style.BRIGHT}{Fore.LIGHTBLUE_EX}[{step}] {message}{Style.RESET_ALL}', end="", flush=True)
+            cprint(f'[{step}]', message, symbol=False, info=True, end="", flush=True, carriage=True)
             time.sleep(0.1)

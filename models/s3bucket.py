@@ -1,10 +1,8 @@
 from utils.loader import Loader
+from utils.cprint import cprint
 import boto3
 import boto3.session
 from botocore.exceptions import ClientError
-from colorama import Fore, Style, init
-
-init(convert=True)
 
 
 class S3Bucket():
@@ -37,7 +35,7 @@ class S3Bucket():
             else:
                 return True
         except ClientError as e:
-            print(f"{Style.BRIGHT}{Fore.LIGHTRED_EX} [-]", e.response['Error']['Code'], Style.RESET_ALL)
+            cprint(e.response['Error']['Code'], error=True)
             return False
 
     def validate_bucket(self) -> bool:
@@ -134,7 +132,7 @@ class S3Bucket():
 
     def check_bucket(self) -> None:
         if self.bucket_name:
-            print(f"{Style.BRIGHT}{Fore.LIGHTCYAN_EX}[i] Selected Bucket:", self.bucket_name, Style.RESET_ALL)
+            cprint(self.bucket_name, info=True)
             if not self.validate_bucket():
                 self.loader.done_message(message="Invalid Bucket Requested!", status=False)
                 return
@@ -143,13 +141,13 @@ class S3Bucket():
 
     def start(self) -> None:
         if not self.validate_creds():
-            print(f"{Style.BRIGHT}{Fore.LIGHTRED_EX} [-] Error in Credentials", Style.RESET_ALL)
+            cprint("Error in Credentials", error=True)
             return
 
         if self.bucket_name:
             self.check_bucket()
         else:
-            print(f"{Style.BRIGHT}{Fore.LIGHTCYAN_EX}[i] No Specific Bucket Name Provided, Auditing All", Style.RESET_ALL)
+            cprint("No Specific Bucket Name Provided, Auditing All", info=True)
             for bucket in self.s3.list_buckets()['Buckets']:
                 self.bucket_name = bucket['Name']
                 self.check_bucket()

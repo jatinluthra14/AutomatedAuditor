@@ -1,8 +1,6 @@
 from utils.loader import Loader
+from utils.cprint import cprint
 from google.cloud import storage
-from colorama import Fore, Style, init
-
-init(convert=True)
 
 
 class GCPBucket():
@@ -36,7 +34,7 @@ class GCPBucket():
 
     def check_bucket(self) -> None:
         if self.bucket_name:
-            print(f"{Style.BRIGHT}{Fore.LIGHTCYAN_EX}[i] Selected Bucket:", self.bucket_name, Style.RESET_ALL)
+            cprint("Selected Bucket:", self.bucket_name, info=True)
             if not self.validate_bucket():
                 self.loader.done_message(message="Invalid Bucket Requested!", status=False)
                 return
@@ -47,7 +45,7 @@ class GCPBucket():
         if self.bucket_name:
             self.check_bucket()
         else:
-            print(f"{Style.BRIGHT}{Fore.LIGHTCYAN_EX}[i] No Specific Bucket Name Provided, Auditing All", Style.RESET_ALL)
+            cprint("No Specific Bucket Name Provided, Auditing All", info=True)
             for bucket in self.client.list_buckets():
                 self.bucket_name = bucket.name
                 self.check_bucket()
