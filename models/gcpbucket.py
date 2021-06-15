@@ -13,6 +13,24 @@ class GCPBucket():
             self.client = storage.Client()
 
         self.bucket_name = bucket_name
+        self.bucket_permissions = {
+            'storage.buckets.create':               'Create new buckets in a project.',
+            'storage.buckets.delete':               'Delete buckets.',
+            'storage.buckets.get':                  'Read bucket metadata, excluding IAM policies.',
+            'storage.buckets.getIamPolicy':         'Read bucket IAM policies.',
+            'storage.buckets.list':                 'List buckets in a project. Also read bucket metadata, excluding IAM policies, when listing.',
+            'storage.buckets.setIamPolicy':         'Update bucket IAM policies.',
+            'storage.buckets.update':               'Update bucket metadata, excluding IAM policies.'
+        }
+        self.object_permissions = {
+            'storage.objects.create':               'Add new objects to a bucket.',
+            'storage.objects.delete':               'Delete objects.',
+            'storage.objects.get':                  'Read object data and metadata, excluding ACLs.',
+            'storage.objects.getIamPolicy':         'Read object ACLs, returned as IAM policies.',
+            'storage.objects.list':                 'List objects in a bucket. Also read object metadata, excluding ACLs, when listing.',
+            'storage.objects.setIamPolicy':         'Update object ACLs.',
+            'storage.objects.update':               'Update object metadata, excluding ACLs.'
+        }
 
         self.loader = Loader()
 
@@ -26,11 +44,29 @@ class GCPBucket():
             buckets.append(bucket.name)
         return self.bucket_name in buckets
 
-    def check_iam(self) -> None:
-        print(self.client.get_bucket(self.bucket_name).get_iam_policy().bindings)
+    def check_bucket_iam(self) -> None:
+        bucket_perms = [perm for perm in self.bucket_permissions.keys() if perm != 'storage.buckets.create' and perm != 'storage.buckets.list']
+        self.loader.load_message('Checking for Authenticated Bucket Permissions...')
+        bucket_perm_check = self.client.bucket(self.bucket_name).test_iam_permissions(permissions=bucket_perms)
+        if bucket_perm_check:
+            self.loader.done_message(message='Found Authenticated Bucket Permissions!', status=True)
+            cprint('\t' + '\n\t'.join([self.bucket_permissions[key] for key in bucket_perm_check]), info=True, symbol=False)
+        else:
+            self.loader.done_message(message='No Bucket Permissions Found!', status=False)
+
+    def check_object_iam(self) -> None:
+        object_perms = [perm for perm in self.object_permissions.keys() if perm != 'storage.objects.getIamPolicy' and perm != 'storage.objects.setIamPolicy']
+        self.loader.load_message('Checking for Authenticated Object Permissions...')
+        object_perm_check = self.client.bucket(self.bucket_name).test_iam_permissions(permissions=object_perms)
+        if object_perm_check:
+            self.loader.done_message(message='Found Authenticated Object Permissions!', status=True)
+            cprint('\t' + '\n\t'.join([self.object_permissions[key] for key in object_perm_check]), info=True, symbol=False)
+        else:
+            self.loader.done_message(message='No Object Permissions Found!', status=False)
 
     def check_all(self) -> None:
-        self.check_iam()
+        self.check_bucket_iam()
+        self.check_object_iam()
 
     def check_bucket(self) -> None:
         if self.bucket_name:
