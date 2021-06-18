@@ -109,11 +109,22 @@ class AZBlob():
 
         self.loader.done_message(message="Network Access not limited.", status=True)
 
+    def check_customer_managed_keys(self) -> None:
+        self.loader.load_message("Checking Customer Managed Keys...")
+        if 'encryption' in self.storage_acct_properties:
+            if 'key_vault_properties' in self.storage_acct_properties['encryption']:
+                if self.storage_acct_properties['encryption']['key_vault_properties']:
+                    self.loader.done_message(message="Customer Managed Keys enabled.", status=True)
+                    return
+
+        self.loader.done_message(message="Customer Managed Keys disabled.", status=False)
+
     def check_all_storage_acct(self) -> None:
         self.check_secure_transfer()
         self.check_shared_key_access()
         self.check_firewall_rules()
         self.check_limit_network_access()
+        self.check_customer_managed_keys()
 
     def start(self) -> None:
         if not self.validate_creds():
