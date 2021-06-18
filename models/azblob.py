@@ -23,6 +23,7 @@ class AZBlob():
         self.blob = ''
         self.storage_acct_properties = dict[str, Any]()
         self.storage_containers = list[str]()
+        self.container_properties = dict[str, Any]()
 
         self.loader = Loader()
 
@@ -70,6 +71,9 @@ class AZBlob():
                 self.loader.done_message(message="Invalid Container Requested!", status=False)
                 return
             self.loader.done_message(message="Container Found!", status=True)
+            self.client = ContainerClient(account_url=self.blob, container_name=self.container_name, credential=self.credential)
+            self.container_properties = self.client.get_container_properties().__dict__
+            self.check_all_container()
 
     def check_secure_transfer(self) -> None:
         self.loader.load_message("Checking Secure Transfer...")
@@ -128,6 +132,15 @@ class AZBlob():
 
         self.loader.done_message(message="Public Access disabled.", status=True)
 
+    def check_public_access_container(self) -> None:
+        self.loader.load_message("Checking Public Access on Container...")
+        if 'public_access' in self.container_properties:
+            if self.container_properties['public_access'] == 'container':
+                self.loader.done_message(message="Public Access is enabled on the container.", status=False)
+                return
+
+        self.loader.done_message(message="Public Access disabled.", status=True)
+
     def check_all_storage_acct(self) -> None:
         self.check_secure_transfer()
         self.check_shared_key_access()
@@ -135,6 +148,9 @@ class AZBlob():
         self.check_limit_network_access()
         self.check_customer_managed_keys()
         self.check_public_access_storage_acct()
+
+    def check_all_container(self) -> None:
+        self.check_public_access_container()
 
     def start(self) -> None:
         if not self.validate_creds():
@@ -150,6 +166,7 @@ class AZBlob():
         cprint('Performing Security Checks on the Storage Account!', info=True)
         self.check_all_storage_acct()
 
+        cprint('Performing Security Checks on the Container!', info=True)
         if self.container_name:
             self.check_container()
         else:
