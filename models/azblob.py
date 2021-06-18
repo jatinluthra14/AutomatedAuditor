@@ -141,6 +141,15 @@ class AZBlob():
 
         self.loader.done_message(message="Public Access disabled.", status=True)
 
+    def check_immutable_policy(self) -> None:
+        self.loader.load_message("Checking Immutability Policy...")
+        if 'has_immutability_policy' in self.container_properties:
+            if not self.container_properties['has_immutability_policy']:
+                self.loader.done_message(message="No Immutability Policy on the container.", status=False)
+                return
+
+        self.loader.done_message(message="Immutability Policy enabled.", status=True)
+
     def check_all_storage_acct(self) -> None:
         self.check_secure_transfer()
         self.check_shared_key_access()
@@ -151,6 +160,7 @@ class AZBlob():
 
     def check_all_container(self) -> None:
         self.check_public_access_container()
+        self.check_immutable_policy()
 
     def start(self) -> None:
         if not self.validate_creds():
