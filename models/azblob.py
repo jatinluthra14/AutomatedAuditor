@@ -79,9 +79,19 @@ class AZBlob():
                 return
 
         self.loader.done_message(message="Secure Transfer disabled.", status=False)
+    
+    def check_shared_key_access(self) -> None:
+        self.loader.load_message("Checking Shared Key Access...")
+        if 'allow_shared_key_access' in self.storage_acct_properties:
+            if self.storage_acct_properties['allow_shared_key_access']:
+                self.loader.done_message(message="Shared Key Access enabled.", status=False)
+                return
+
+        self.loader.done_message(message="Shared Key Access disabled.", status=True)
 
     def check_all_storage_acct(self) -> None:
         self.check_secure_transfer()
+        self.check_shared_key_access()
 
     def start(self) -> None:
         if not self.validate_creds():
