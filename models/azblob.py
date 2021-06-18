@@ -1,3 +1,4 @@
+from typing import Any
 from utils.cprint import cprint
 from utils.loader import Loader
 from azure.identity import ClientSecretCredential
@@ -19,6 +20,8 @@ class AZBlob():
         self.storage_mgmt: StorageManagementClient
         self.bs_client: BlobServiceClient
         self.client: ContainerClient
+        self.blob = ''
+        self.storage_acct_properties = dict[str, Any]()
         self.storage_containers = list[str]()
 
         self.loader = Loader()
@@ -52,7 +55,9 @@ class AZBlob():
             self.storage_mgmt = StorageManagementClient(credential=self.credential, subscription_id=self.subscription_id)
             for storage_acct in self.storage_mgmt.storage_accounts.list():
                 if str(storage_acct.name) == self.storage_acct_name:
-                    self.bs_client = BlobServiceClient(account_url=storage_acct.primary_endpoints.blob, credential=self.credential)
+                    self.storage_acct_properties = storage_acct.as_dict()
+                    self.blob = str(storage_acct.primary_endpoints.blob)
+                    self.bs_client = BlobServiceClient(account_url=self.blob, credential=self.credential)
                     return True
         except Exception as e:
             self.loader.done_message(message=e, status=False)
@@ -66,6 +71,18 @@ class AZBlob():
                 return
             self.loader.done_message(message="Container Found!", status=True)
 
+    def check_secure_transfer(self) -> None:
+        self.loader.load_message("Checking Secure Transfer...")
+        if 'enable_https_traffic_only' in self.storage_acct_properties:
+            if self.storage_acct_properties['enable_https_traffic_only']:
+                self.loader.done_message(message="Secure Transfer enabled.", status=True)
+                return
+
+        self.loader.done_message(message="Secure Transfer disabled.", status=False)
+
+    def check_all_storage_acct(self) -> None:
+        self.check_secure_transfer()
+
     def start(self) -> None:
         if not self.validate_creds():
             self.loader.done_message(message="Error in Credentials.", status=False)
@@ -76,6 +93,9 @@ class AZBlob():
             self.loader.done_message(message="Invalid Storage Account Requested!", status=False)
             return
         self.loader.done_message(message="Storage Account Validated.", status=True)
+
+        cprint('Performing Security Checks on the Storage Account!', info=True)
+        self.check_all_storage_acct()
 
         if self.container_name:
             self.check_container()
