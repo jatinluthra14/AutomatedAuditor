@@ -119,12 +119,22 @@ class AZBlob():
 
         self.loader.done_message(message="Customer Managed Keys disabled.", status=False)
 
+    def check_public_access_storage_acct(self) -> None:
+        self.loader.load_message("Checking Public Access on Storage Account...")
+        if 'allow_blob_public_access' in self.storage_acct_properties:
+            if self.storage_acct_properties['allow_blob_public_access']:
+                self.loader.done_message(message="Public Access is enabled on the complete storage account.", status=False)
+                return
+
+        self.loader.done_message(message="Public Access disabled.", status=True)
+
     def check_all_storage_acct(self) -> None:
         self.check_secure_transfer()
         self.check_shared_key_access()
         self.check_firewall_rules()
         self.check_limit_network_access()
         self.check_customer_managed_keys()
+        self.check_public_access_storage_acct()
 
     def start(self) -> None:
         if not self.validate_creds():
