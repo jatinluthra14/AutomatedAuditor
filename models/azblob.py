@@ -99,10 +99,21 @@ class AZBlob():
 
         self.loader.done_message(message="Firewall Rules disabled.", status=False)
 
+    def check_limit_network_access(self) -> None:
+        self.loader.load_message("Checking if Network Access is Limited...")
+        if 'network_rule_set' in self.storage_acct_properties:
+            if 'default_action' in self.storage_acct_properties['network_rule_set']:
+                if self.storage_acct_properties['network_rule_set']['default_action'] == 'Allow':
+                    self.loader.done_message(message="Network Access not limited.", status=False)
+                    return
+
+        self.loader.done_message(message="Network Access not limited.", status=True)
+
     def check_all_storage_acct(self) -> None:
         self.check_secure_transfer()
         self.check_shared_key_access()
         self.check_firewall_rules()
+        self.check_limit_network_access()
 
     def start(self) -> None:
         if not self.validate_creds():
