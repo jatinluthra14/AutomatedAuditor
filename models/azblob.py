@@ -79,7 +79,7 @@ class AZBlob():
                 return
 
         self.loader.done_message(message="Secure Transfer disabled.", status=False)
-    
+
     def check_shared_key_access(self) -> None:
         self.loader.load_message("Checking Shared Key Access...")
         if 'allow_shared_key_access' in self.storage_acct_properties:
@@ -89,9 +89,20 @@ class AZBlob():
 
         self.loader.done_message(message="Shared Key Access disabled.", status=True)
 
+    def check_firewall_rules(self) -> None:
+        self.loader.load_message("Checking Firewall Rules...")
+        if 'network_rule_set' in self.storage_acct_properties:
+            if 'ip_rules' in self.storage_acct_properties['network_rule_set']:
+                if self.storage_acct_properties['network_rule_set']['ip_rules']:
+                    self.loader.done_message(message="Firewall Rules enabled.", status=True)
+                    return
+
+        self.loader.done_message(message="Firewall Rules disabled.", status=False)
+
     def check_all_storage_acct(self) -> None:
         self.check_secure_transfer()
         self.check_shared_key_access()
+        self.check_firewall_rules()
 
     def start(self) -> None:
         if not self.validate_creds():
