@@ -3,7 +3,7 @@ from utils.loader import Loader
 from azure.identity import ClientSecretCredential
 from azure.core.exceptions import ClientAuthenticationError
 from azure.mgmt.storage import StorageManagementClient
-from azure.storage.blob import ContainerClient
+from azure.storage.blob import ContainerClient, BlobServiceClient
 
 
 class AZBlob():
@@ -17,8 +17,9 @@ class AZBlob():
 
         self.credential: ClientSecretCredential
         self.storage_mgmt: StorageManagementClient
+        self.bs_client: BlobServiceClient
         self.client: ContainerClient
-        self.storage_accts = list[str]()
+        self.storage_containers = list[str]()
 
         self.loader = Loader()
 
@@ -33,16 +34,37 @@ class AZBlob():
             cprint(e, error=True)
         return False
 
+    def validate_container(self) -> bool:
+        self.loader.load_message('Validating Container...')
+        try:
+            if len(self.storage_containers) < 1:
+                self.storage_containers = [str(container.name) for container in self.bs_client.list_containers()]
+            if self.container_name in self.storage_containers:
+                return True
+        except Exception as e:
+            cprint(e, error=True)
+            pass
+        return False
+
     def check_storage_acct(self) -> bool:
         self.loader.load_message('Validating Storage Account...')
         try:
             self.storage_mgmt = StorageManagementClient(credential=self.credential, subscription_id=self.subscription_id)
-            self.storage_accts = [str(storage_acct.name) for storage_acct in self.storage_mgmt.storage_accounts.list()]
-            if self.storage_acct_name in self.storage_accts:
-                return True
+            for storage_acct in self.storage_mgmt.storage_accounts.list():
+                if str(storage_acct.name) == self.storage_acct_name:
+                    self.bs_client = BlobServiceClient(account_url=storage_acct.primary_endpoints.blob, credential=self.credential)
+                    return True
         except Exception as e:
             self.loader.done_message(message=e, status=False)
         return False
+
+    def check_container(self) -> None:
+        if self.container_name:
+            cprint(self.container_name, info=True)
+            if not self.validate_container():
+                self.loader.done_message(message="Invalid Container Requested!", status=False)
+                return
+            self.loader.done_message(message="Container Found!", status=True)
 
     def start(self) -> None:
         if not self.validate_creds():
@@ -54,3 +76,11 @@ class AZBlob():
             self.loader.done_message(message="Invalid Storage Account Requested!", status=False)
             return
         self.loader.done_message(message="Storage Account Validated.", status=True)
+
+        if self.container_name:
+            self.check_container()
+        else:
+            cprint("No Specific Container Name Provided, Auditing All", info=True)
+            for container in self.bs_client.list_containers():
+                self.container_name = container.name
+                self.check_container()
