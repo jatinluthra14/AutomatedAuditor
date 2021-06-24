@@ -28,18 +28,30 @@ def init_azblob(args: argparse.Namespace) -> None:
 
 
 def gen_config(args: argparse.Namespace) -> None:
+    cprint('Generating Config...', info=True)
     platform: str = args.platform
-    cprint(f'Enter the Following Information for {platform.upper()} Platform', info=True)
     template: dict[str, str] = json.loads(open(f'templates/{platform}_config.json', 'r').read())
-    for key in template.keys():
-        prompt = key.replace('_', ' ').capitalize()
-        val = input(prompt + ": ")
-        template[key] = val
+
+    if platform == 'aws' and args.aws_creds:
+        template['access_key_id'] = args.aws_creds[0]
+        template['secret_access_key'] = args.aws_creds[1]
+    elif platform == 'az' and args.az_creds:
+        template['tenant_id'] = args.az_creds[0]
+        template['client_id'] = args.az_creds[1]
+        template['client_secret'] = args.az_creds[2]
+        template['subscription_id'] = args.az_creds[3]
+    else:
+        cprint(f'Enter the Following Information for {platform.upper()} Platform', info=True)
+        for key in template.keys():
+            prompt = key.replace('_', ' ').capitalize()
+            val = input(prompt + ": ")
+            template[key] = val
+
     fpath = os.path.abspath(f'{platform}_config.json')
     with open(fpath, 'w') as fp:
         fp.write(json.dumps(template))
-    cprint("File Written at Path: " + fpath, success=True)
-    cprint("Use this file next time to authenticate", info=True)
+        cprint("File Written at Path: " + fpath, success=True)
+        cprint("Use this file next time to authenticate", info=True)
 
 
 if __name__ == '__main__':
